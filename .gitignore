@@ -1,0 +1,29 @@
+# Private research data; retain locally, never publish.
+/fixtures/
+/curated/
+# Runtime state, caches, credit ledger, sessions and provider diagnostics.
+.data/
+data/
+cache/
+ledger/
+*.lock
+*.tmp
+# Credentials and local configuration.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+.railway/
+.vercel/
+# Generated and local files.
+dist/
+node_modules/
+coverage/
+*.log
+test-results.txt
+*SMOKE-RESULTS.json
+.DS_Store
+Thumbs.db
+work/

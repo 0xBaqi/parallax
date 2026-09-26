@@ -1,0 +1,16 @@
+{
+  "name": "parallax-m2",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "test": "node --test",
+    "build": "node scripts/build.mjs",
+    "start": "node dist/server/main.mjs",
+    "dev": "node server/main.mjs",
+    "smoke": "node scripts/smoke.mjs"
+  }
+}
