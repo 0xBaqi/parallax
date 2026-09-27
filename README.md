@@ -12,7 +12,7 @@ Once we know the outcome, earlier signals can look much clearer than they really
 
 ## The experience
 
-**Time Machine** opens a curated historical case with an offline, zero-credit workflow. **Investigate** accepts a token, Ethereum or Solana, a cutoff and a lookback window. Live investigations require operator access and explicit approval of any quoted credit cost. Arbitrary inputs do not guarantee historical coverage.
+**Time Machine** opens a curated historical case with an offline, zero-credit workflow. **Investigate** accepts a token, Ethereum or Solana, a cutoff and a lookback window. The public demo allows anonymous investigations with explicit approval of any quoted credit cost. Arbitrary inputs do not guarantee historical coverage.
 
 ```text
 STATE → PATH → CONFLICT | TEMPORAL FIREWALL | OUTCOME
@@ -42,14 +42,14 @@ Parallax integrates [Nansen](https://nansen.ai/) historical flow summaries, hist
 
 Public application outputs are derived classifications, coverage information, receipts and relative outcome measures. They do not provide a raw Nansen data download or a general-purpose provider proxy. Attribution remains visible in the application.
 
-The Nansen API key stays server-side. Live access also requires a separate operator token; the intended operator-access workflow supplies that token, never the Nansen key. Tokens must not be committed, placed in URLs or included in screenshots.
+Both the Nansen key and admin token stay server-side. Set `PARALLAX_PUBLIC_DEMO=true` to permit anonymous access only to the bounded quote/start/decision/break workflow. It defaults to disabled; legacy routes remain blocked when the session workflow is installed. No browser token is needed or supplied. Session and quote identifiers are unguessable capabilities; keep them private.
 
 ## Controls and unavailable data
 
 - Fixture mode is the default; live mode requires explicit configuration.
 - An uncached reconstruction and an uncached outcome reveal have separate credit approval steps. Current code estimates 11 credits for reconstruction and 5 for reveal; these are application assumptions, not a promise of future provider pricing.
 - A durable global ledger reserves credits before requests. Failed or uncertain calls are not automatically refunded locally.
-- A total credit budget, per-request cap and uncached investigation rate limit bound usage. Expired free quotes cannot silently turn into paid execution.
+- A total credit budget, per-request cap and durable global limit of 3 uncached investigations per 10 minutes bound usage. Public-demo session requests also share a durable 120-request/minute limit, independent of forwarded IP headers. Expired free quotes cannot silently turn into paid execution.
 - Reconstruction caching includes the query and source namespace; reveal results persist. Concurrent matching work is deduplicated in-process.
 - Unavailable, partial and unsupported evidence stays explicit. Missing cutoff prices prevent fabricated returns. Transient outcome-source failures leave AFTER sealed and surface an error for deliberate retry.
 
@@ -107,7 +107,7 @@ The public source contains test logic, while research inputs and raw-valued expe
 
 ## Deployment
 
-The existing Railway deployment is the M4.2 application. M5 freezes application code and packages the source for review; it does not redeploy or reset production state.
+M5.1 adds opt-in public judge access to the existing Railway service. Keep the global budget at 30 and the per-request cap at 11 during rollout; preserve existing persistent state.
 
 An authorized deployment needs the private bundle, the configured secrets and a persistent `PARALLAX_DATA_DIR`. Use one active writer for that directory. Preserve its cache, sessions, reveal records, rate records and credit ledger across deployments; do not replace it with a test directory or reset it to replenish the budget.
 
@@ -118,7 +118,7 @@ The existing Dockerfile builds the package but retains a sleeping default comman
 - Historical coverage and label history vary. Unknown tokens, sparse observations and partial windows can produce unavailable evidence or outcomes.
 - The curated catalog is narrow; chain input support is not universal historical coverage.
 - Daily observations do not describe intraday price paths. Outcome horizons are constrained by validated cutoff and subsequent observations.
-- The application is a single-operator, filesystem-backed buildathon release, not a multi-tenant or horizontally scaled service.
+- The application is a single-writer, filesystem-backed buildathon release, not a multi-tenant or horizontally scaled service.
 - Private research inputs are withheld from GitHub. Independent reproduction of the full curated experience requires authorized access to those inputs.
 - A repository audit and passing tests are not a formal external security certification.
 

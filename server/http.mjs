@@ -13,7 +13,7 @@ async function body(req) {
   for await(const chunk of req) {text+=chunk;if(Buffer.byteLength(text)>4096) throw new AppError('REQUEST_TOO_LARGE',413);}
   try{return JSON.parse(text);}catch{throw new AppError('INVALID_JSON');}
 }
-export function createApp({service,publicDir,adminToken=null,experience=null,publicOrigin=null}) {
+export function createApp({service,publicDir,adminToken=null,experience=null,publicOrigin=null,publicDemo=false}) {
   if(service.adapter.live && (!adminToken || adminToken.length<24)) throw new AppError('ADMIN_TOKEN_REQUIRED',503);
   let origin=null;
   if(publicOrigin!==null){
@@ -36,13 +36,20 @@ export function createApp({service,publicDir,adminToken=null,experience=null,pub
       if(req.method==='GET' && url.pathname==='/api/scenarios') return send(200,{mode:service.adapter.live?'live':'fixture',scenarios:service.adapter.scenarios()});
       if(experience && req.method==='GET' && url.pathname==='/api/catalog') return send(200,{mode:service.adapter.live?'live':'fixture',scenarios:experience.timeMachine.adapter.scenarios()});
       if(experience && req.method==='POST' && ['/api/quote','/api/start','/api/decision','/api/break'].includes(url.pathname)) {
+        // Durable aggregate limit: cannot be evaded with spoofed proxy headers,
+        // new sessions, or a process restart. Paid work has a stricter limit below.
+        if(publicDemo===true) {
+          const now=service.now(),recent=(service.store.read('rate','public-workflow')?.times??[]).filter(t=>t>now-60000);
+          if(recent.length>=120)throw new AppError('PUBLIC_RATE_LIMIT',429);
+          service.store.write('rate','public-workflow',{times:[...recent,now]});
+        }
         if(!/^application\/json(?:;|$)/i.test(req.headers['content-type']??'')) throw new AppError('JSON_REQUIRED',415);
         const input=await body(req);
         if(!input || typeof input!=='object' || Array.isArray(input))throw new AppError('INVALID_REQUEST');
         const keys={'/api/quote':['mode','input'],'/api/start':['quote','approvedCredits'],'/api/decision':['session','decision'],'/api/break':['session','approvedCredits']}[url.pathname];
         if(Object.keys(input).some(k=>!keys.includes(k)))throw new AppError('INVALID_REQUEST');
         const mode=url.pathname==='/api/quote'?input.mode:url.pathname==='/api/start'?experience.quotes.get(input.quote)?.mode:experience.get(input.session).mode;
-        if(service.adapter.live && mode!=='time-machine' && !authorized(req.headers.authorization,adminToken))throw new AppError('UNAUTHORIZED',401);
+        if(service.adapter.live && mode!=='time-machine' && publicDemo!==true && !authorized(req.headers.authorization,adminToken))throw new AppError('UNAUTHORIZED',401);
         const result=url.pathname==='/api/quote'?experience.quote(input):url.pathname==='/api/start'?await experience.start(input,req.socket.remoteAddress):url.pathname==='/api/decision'?experience.decide(input):await experience.reveal(input);
         return send(200,result);
       }
